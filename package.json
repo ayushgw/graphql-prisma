@@ -9,7 +9,7 @@
     "get-schema": "graphql get-schema -p prisma"
   },
   "keywords": [],
-  "author": "",
+  "author": "Ayush Goswami",
   "license": "ISC",
   "dependencies": {
     "babel-cli": "^6.26.0",
