@@ -1,48 +1,27 @@
 import uuidv4 from 'uuid/v4'
 
 const Mutation = {
-    createUser(parent, args, { db }, info) {
-        const emailTaken = db.users.some(user => user.email === args.data.email)
+    async createUser(parent, args, { prisma }, info) {
+        const emailTaken = await prisma.exists.User({ email: args.data.email })
 
         if (emailTaken) {
             throw new Error('Email Taken!')
         }
 
-        const user = {
-            id: uuidv4(),
-            ...args.data
-        }
-
-        db.users.push(user)
-
-        return user
+        return prisma.mutation.createUser({ data: args.data }, info)
     },
-    deleteUser(parent, args, { db }, info) {
-        const userIndex = db.users.findIndex(user => user.id === args.id)
+    async deleteUser(parent, args, { prisma }, info) {
+        const userExists = await prisma.exists.User({ id: args.id })
 
-        if (userIndex === -1) {
+        if (!userExists) {
             throw new Error('User not found!')
         }
 
-        const deletedUsers = db.users.splice(userIndex, 1)
-
-        // Removing ALL User-Associated Content
-        // Removing ALL posts created by the user
-        db.posts = db.posts.filter(post => {
-            const match = post.author === args.id
-
-            if (match) {
-                // Removing ALL comments on this post (by any user)
-                db.comments = db.comments.filter(comment => comment.post !== post.id)
+        return await prisma.mutation.deleteUser({
+            where: {
+                id: args.id
             }
-
-            return !match
-        })
-
-        // Removing ALL comments made by the user (on any post)
-        db.comments = db.comments.filter(comment => comment.author !== args.id)
-
-        return deletedUsers[0]
+        }, info)
     },
     updateUser(parent, args, { db }, info) {
         const { id, data } = args
@@ -184,12 +163,12 @@ const Mutation = {
 
         db.comments.push(comment)
 
-        pubsub.publish(`comment ${comment.post}`, { 
+        pubsub.publish(`comment ${comment.post}`, {
             comment: {
                 mutation: 'CREATED',
                 data: comment
             }
-         })
+        })
 
         return comment
     },
