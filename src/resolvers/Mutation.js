@@ -19,102 +19,32 @@ const Mutation = {
             data: args.data
         }, info)
     },
-    createPost(parent, args, { db, pubsub }, info) {
-        const userExists = db.users.some(user => user.id === args.data.author)
-
-        if (!userExists) {
-            throw new Error('User doesn\'t exist!')
-        }
-
-        const post = {
-            id: uuidv4(),
-            ...args.data
-        }
-
-        db.posts.push(post)
-
-        if (post.published) {
-            pubsub.publish('post', {
-                post: {
-                    mutation: 'CREATED',
-                    data: post
-                }
-            })
-        }
-
-        return post
-    },
-    deletePost(parent, args, { db, pubsub }, info) {
-        const postIndex = db.posts.findIndex(post => post.id === args.id)
-
-        if (postIndex === -1) {
-            throw new Error('No post found!')
-        }
-
-        const [post] = db.posts.splice(postIndex, 1)
-
-        db.comments = db.comments.filter(comment => comment.post !== args.id)
-
-        if (post.published) {
-            pubsub.publish('post', {
-                post: {
-                    mutation: 'DELETED',
-                    data: post
-                }
-            })
-        }
-
-        return post
-    },
-    updatePost(parent, args, { db, pubsub }, info) {
-        const { id, data } = args
-        const post = db.posts.find(post => post.id === id)
-        const originalPost = { ...post }
-
-        if (!post) {
-            throw new Error('No post found!')
-        }
-
-        if (typeof data.title === 'string') {
-            post.title = data.title
-        }
-
-        if (typeof data.body === 'string') {
-            post.body = data.body
-        }
-
-        if (typeof data.published === 'boolean') {
-            post.published = data.published
-
-            if (!originalPost.published && post.published) {
-                // Created Event
-                pubsub.publish('post', {
-                    post: {
-                        mutation: 'CREATED',
-                        data: post
+    createPost(parent, args, { prisma }, info) {
+        return prisma.mutation.createPost({
+            data: {
+                ...args.data,
+                author: {
+                    connect: {
+                        id: args.data.author
                     }
-                })
-            }
-            else if (originalPost.published && !post.published) {
-                // Deleted Event
-                pubsub.publish('post', {
-                    post: {
-                        mutation: 'DELETED',
-                        data: originalPost // returning 'originalPost' instead of 'post' on DELETED to prevent exposing updates that user might not want anyone to see
-                    }
-                })
-            }
-        } else if (post.published) {
-            // Updated Event
-            pubsub.publish('post', {
-                post: {
-                    mutation: 'UPDATED',
-                    data: post
                 }
-            })
-        }
-
-        return post
+            }
+        }, info)
+    },
+    deletePost(parent, args, { prisma }, info) {
+        return prisma.mutation.deletePost({
+            where: {
+                id: args.id
+            }
+        }, info)
+    },
+    updatePost(parent, args, { prisma }, info) {
+        return prisma.mutation.updatePost({
+            where: {
+                id: args.id
+            },
+            data: args.data
+        }, info)
     },
     createComment(parent, args, { db, pubsub }, info) {
         const userExists = db.users.some(user => user.id === args.data.author)
