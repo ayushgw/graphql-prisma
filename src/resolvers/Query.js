@@ -4,7 +4,7 @@ const Query = {
     users(parent, args, { prisma }, info) {
         const opArgs = {}
 
-        if(args.query) {
+        if (args.query) {
             opArgs.where = {
                 OR: [{
                     name_contains: args.query
@@ -18,16 +18,39 @@ const Query = {
         return prisma.query.users(opArgs, info)
     },
     posts(parent, args, { prisma }, info) {
-        const opArgs = {}
-
-        if(args.query) {
-            opArgs.where = {
-                OR: [{
-                    title_contains: args.query
-                }, {
-                    body_contains: args.query
-                }]
+        const opArgs = {
+            where: {
+                published: true
             }
+        }
+
+        if (args.query) {
+            opArgs.where.OR = [{
+                title_contains: args.query
+            }, {
+                body_contains: args.query
+            }]
+        }
+
+        return prisma.query.posts(opArgs, info)
+    },
+    myPosts(parent, args, { prisma, request }, info) {
+        const userId = getUserId(request)
+
+        const opArgs = {
+            where: {
+                author: {
+                    id: userId
+                }
+            }
+        }
+
+        if (args.query) {
+            opArgs.where.OR = [{
+                title_contains: args.query
+            }, {
+                body_contains: args.query
+            }]
         }
 
         return prisma.query.posts(opArgs, info)
@@ -36,15 +59,15 @@ const Query = {
         return prisma.query.comments(null, info)
     },
     async me(parent, args, { prisma, request }, info) {
-        const userId = getUserId(request) 
+        const userId = getUserId(request)
 
         const user = await prisma.query.user({
             where: {
                 id: userId
             }
-        })
+        }, info)
 
-        if(!user) {
+        if (!user) {
             throw new Error('Could not find user!')
         }
 
@@ -64,9 +87,9 @@ const Query = {
                     }
                 }]
             }
-        })
+        }, info)
 
-        if(posts.length === 0) {
+        if (posts.length === 0) {
             throw new Error('Post not found!')
         }
 
