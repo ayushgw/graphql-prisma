@@ -10,7 +10,7 @@ const getUserId = (request, requireAuth = true) => {
     }
 
     if(requireAuth) {
-        throw new Error('Authoriation required!')
+        throw new Error('Authorization required!')
     }
 
     return null
