@@ -31,13 +31,13 @@ const Mutation = {
             }
         })
 
-        if(!user) {
+        if (!user) {
             throw new Error('Unable to login!')
         }
 
         const isMatch = await bcrypt.compare(args.data.password, user.password)
 
-        if(!isMatch) {
+        if (!isMatch) {
             throw new Error('Unable to login!')
         }
 
@@ -90,7 +90,7 @@ const Mutation = {
             }
         })
 
-        if(!postExists) {
+        if (!postExists) {
             throw new Error('Unable to delete post!')
         }
 
@@ -109,10 +109,25 @@ const Mutation = {
             }
         })
 
-        if(!postExists) {
+        if (!postExists) {
             throw new Error('Unable to update post!')
         }
-        
+
+        const isPublished = prisma.exists.Post({
+            id: args.id,
+            published: true
+        })
+
+        if (isPublished && args.data.published === false) {
+            await prisma.mutation.deleteManyComments({
+                where: {
+                    post: {
+                        id: args.id
+                    }
+                }
+            })
+        }
+
         return prisma.mutation.updatePost({
             where: {
                 id: args.id
@@ -125,10 +140,10 @@ const Mutation = {
 
         const postExists = await prisma.exists.Post({
             id: args.data.post,
-            published: true 
+            published: true
         })
 
-        if(!postExists) {
+        if (!postExists) {
             throw new Error('Could not comment!')
         }
 
@@ -157,7 +172,7 @@ const Mutation = {
             }
         })
 
-        if(!commentExists) {
+        if (!commentExists) {
             throw new Error('Unable to delete comment!')
         }
 
@@ -176,7 +191,7 @@ const Mutation = {
             }
         })
 
-        if(!commentExists) {
+        if (!commentExists) {
             throw new Error('Unable to update comment!')
         }
 
